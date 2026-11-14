@@ -5,7 +5,7 @@ use serde_json::json;
 fn workspace_diagnostics_serializes_with_the_plural_wire_name() {
     let caps = ClientCapabilities {
         workspace: Some(WorkspaceClientCapabilities {
-            diagnostic: Some(DiagnosticWorkspaceClientCapabilities {
+            diagnostics: Some(DiagnosticWorkspaceClientCapabilities {
                 refresh_support: Some(true),
             }),
             ..Default::default()
@@ -36,7 +36,7 @@ fn workspace_diagnostics_deserializes_the_plural_wire_name() {
         caps.workspace
             .as_ref()
             .unwrap()
-            .diagnostic
+            .diagnostics
             .as_ref()
             .unwrap()
             .refresh_support,
