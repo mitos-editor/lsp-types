@@ -59,7 +59,7 @@ fn fmt_pascal_case(f: &mut std::fmt::Formatter<'_>, name: &str) -> std::fmt::Res
 }
 
 macro_rules! lsp_enum {
-    (impl $typ: ident { $( $(#[$attr:meta])* pub const $name: ident : $enum_type: ty = $value: expr; )* }) => {
+    (impl $typ: ident { $( $(#[$attr:meta])* pub const $name: ident : $enum_type: ty = $value: expr_2021; )* }) => {
         impl $typ {
             $(
             $(#[$attr])*

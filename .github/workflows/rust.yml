@@ -2,9 +2,9 @@ name: Rust
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -13,7 +13,7 @@ jobs:
   build:
     strategy:
       matrix:
-        rust: [stable, nightly]
+        rust: ["1.85.0", stable, nightly]
         features: ["", proposed]
 
     env:
@@ -34,3 +34,25 @@ jobs:
 
     - name: Run tests
       run: cargo test --features "${{ matrix.features }}"
+
+  minimal-dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: nightly
+
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: "1.85.0"
+
+    - name: Resolve minimum direct dependencies
+      run: cargo +nightly generate-lockfile -Z direct-minimal-versions
+
+    - name: Run tests
+      run: |
+        cargo test --locked
+        cargo test --locked --all-features

@@ -15,7 +15,7 @@ delta insertion data is a raw integer array, as required by the protocol.
 
 The original upstream documentation follows.
 
-# lsp-types [![Build Status](https://travis-ci.org/gluon-lang/lsp-types.svg?branch=master)](https://travis-ci.org/gluon-lang/lsp-types) [![Documentation](https://docs.rs/lsp-types/badge.svg)](https://docs.rs/crate/lsp-types)
+# lsp-types [![Build Status](https://github.com/mitos-editor/lsp-types/actions/workflows/rust.yml/badge.svg?branch=main)](https://github.com/mitos-editor/lsp-types/actions/workflows/rust.yml?query=branch%3Amain) [![Documentation](https://docs.rs/lsp-types/badge.svg)](https://docs.rs/crate/lsp-types)
 
 Types useful for interacting with a [language server](https://code.visualstudio.com/blogs/2016/06/27/common-language-protocol).
 

@@ -34,7 +34,10 @@ fn jdtls_workspace_snippets_without_kind_decode_as_snippets() {
         panic!("snippet edit")
     };
     assert_eq!(snippet.snippet.kind, "snippet");
-    assert_eq!(serde_json::to_value(snippet).unwrap()["snippet"]["kind"], "snippet");
+    assert_eq!(
+        serde_json::to_value(snippet).unwrap()["snippet"]["kind"],
+        "snippet"
+    );
 }
 
 #[test]
