@@ -10,6 +10,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentSymbolClientCapabilities {
+    /// Supports a label identifying a document symbol provider (LSP 3.16).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub label_support: Option<bool>,
     /// This capability supports dynamic registration.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dynamic_registration: Option<bool>,

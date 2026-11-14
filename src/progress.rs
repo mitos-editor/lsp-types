@@ -20,6 +20,8 @@ pub struct ProgressParams {
 #[serde(untagged)]
 pub enum ProgressParamsValue {
     WorkDone(WorkDoneProgress),
+    /// Partial results and extension-specific progress values.
+    PartialResult(serde_json::Value),
 }
 
 /// The `window/workDoneProgress/create` request is sent
@@ -38,14 +40,6 @@ pub struct WorkDoneProgressCreateParams {
 pub struct WorkDoneProgressCancelParams {
     /// The token to be used to report progress.
     pub token: ProgressToken,
-}
-
-/// Options to signal work done progress support in server capabilities.
-#[derive(Debug, Eq, PartialEq, Default, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct WorkDoneProgressOptions {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub work_done_progress: Option<bool>,
 }
 
 /// An optional token that a server can use to report work done progress

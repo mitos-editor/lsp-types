@@ -4,8 +4,9 @@ use serde::ser::SerializeSeq;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    PartialResultParams, Range, StaticRegistrationOptions, TextDocumentIdentifier,
-    TextDocumentRegistrationOptions, WorkDoneProgressOptions, WorkDoneProgressParams,
+    LSPObject, OneOf, PartialResultParams, Range, StaticRegistrationOptions,
+    TextDocumentIdentifier, TextDocumentRegistrationOptions, WorkDoneProgressOptions,
+    WorkDoneProgressParams,
 };
 /// A set of predefined token types. This set is not fixed
 /// and clients can specify additional token types via the
@@ -41,6 +42,9 @@ impl SemanticTokenType {
 
     /// @since 3.17.0
     pub const DECORATOR: SemanticTokenType = SemanticTokenType::new("decorator");
+
+    /// @since 3.18.0
+    pub const LABEL: SemanticTokenType = SemanticTokenType::new("label");
 
     pub const fn new(tag: &'static str) -> Self {
         SemanticTokenType(Cow::Borrowed(tag))
@@ -206,7 +210,7 @@ pub struct SemanticTokens {
 
     /// The actual tokens. For a detailed description about how the data is
     /// structured please see
-    /// <https://github.com/microsoft/vscode-extension-samples/blob/5ae1f7787122812dcc84e37427ca90af5ee09f14/semantic-tokens-sample/vscode.proposed.d.ts#L71>
+    /// <https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#semanticTokens>
     #[serde(
         deserialize_with = "SemanticToken::deserialize_tokens",
         serialize_with = "SemanticToken::serialize_tokens"
@@ -285,7 +289,7 @@ pub struct SemanticTokensDelta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub result_id: Option<String>,
     /// For a detailed description how these edits are structured please see
-    /// <https://github.com/microsoft/vscode-extension-samples/blob/5ae1f7787122812dcc84e37427ca90af5ee09f14/semantic-tokens-sample/vscode.proposed.d.ts#L131>
+    /// <https://microsoft.github.io/language-server-protocol/specifications/lsp/3.18/specification/#semanticTokensDelta>
     pub edits: Vec<SemanticTokensEdit>,
 }
 
@@ -356,12 +360,15 @@ pub struct SemanticTokensClientCapabilities {
 pub struct SemanticTokensClientCapabilitiesRequests {
     /// The client will send the `textDocument/semanticTokens/range` request if the server provides a corresponding handler.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub range: Option<bool>,
+    pub range: Option<SemanticTokensRangeOptions>,
 
     /// The client will send the `textDocument/semanticTokens/full` request if the server provides a corresponding handler.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub full: Option<SemanticTokensFullOptions>,
 }
+
+/// Range support can be a boolean or an options object.
+pub type SemanticTokensRangeOptions = OneOf<bool, LSPObject>;
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -389,7 +396,7 @@ pub struct SemanticTokensOptions {
     /// Server supports providing semantic tokens for a specific range
     /// of a document.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub range: Option<bool>,
+    pub range: Option<SemanticTokensRangeOptions>,
 
     /// Server supports providing semantic tokens for a full document.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -413,8 +420,8 @@ pub struct SemanticTokensRegistrationOptions {
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
 pub enum SemanticTokensServerCapabilities {
-    SemanticTokensOptions(SemanticTokensOptions),
     SemanticTokensRegistrationOptions(SemanticTokensRegistrationOptions),
+    SemanticTokensOptions(SemanticTokensOptions),
 }
 
 impl From<SemanticTokensOptions> for SemanticTokensServerCapabilities {
@@ -439,6 +446,7 @@ pub struct SemanticTokensWorkspaceClientCapabilities {
     /// semantic tokens currently shown. It should be used with absolute care
     /// and is useful for situation where a server for example detect a project
     /// wide change that requires such a calculation.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub refresh_support: Option<bool>,
 }
 

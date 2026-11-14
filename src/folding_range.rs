@@ -1,6 +1,6 @@
 use crate::{
     PartialResultParams, StaticTextDocumentColorProviderOptions, TextDocumentIdentifier,
-    WorkDoneProgressParams,
+    WorkDoneProgressOptions, WorkDoneProgressParams,
 };
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
@@ -20,8 +20,8 @@ pub struct FoldingRangeParams {
 #[serde(untagged)]
 pub enum FoldingRangeProviderCapability {
     Simple(bool),
-    FoldingProvider(FoldingProviderOptions),
     Options(StaticTextDocumentColorProviderOptions),
+    FoldingProvider(FoldingProviderOptions),
 }
 
 impl From<StaticTextDocumentColorProviderOptions> for FoldingRangeProviderCapability {
@@ -43,7 +43,10 @@ impl From<bool> for FoldingRangeProviderCapability {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
-pub struct FoldingProviderOptions {}
+pub struct FoldingProviderOptions {
+    #[serde(flatten)]
+    pub work_done_progress_options: WorkDoneProgressOptions,
+}
 
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -100,8 +103,8 @@ pub struct FoldingRangeClientCapabilities {
 }
 
 /// Enum of known range kinds
-#[derive(Debug, Eq, PartialEq, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Eq, PartialEq, Deserialize, Clone)]
+#[serde(from = "String")]
 pub enum FoldingRangeKind {
     /// Folding range for a comment
     Comment,
@@ -109,6 +112,39 @@ pub enum FoldingRangeKind {
     Imports,
     /// Folding range for a region (e.g. `#region`)
     Region,
+    /// A server-defined folding range kind.
+    Custom(String),
+}
+
+impl From<String> for FoldingRangeKind {
+    fn from(value: String) -> Self {
+        match value.as_str() {
+            "comment" => Self::Comment,
+            "imports" => Self::Imports,
+            "region" => Self::Region,
+            _ => Self::Custom(value),
+        }
+    }
+}
+
+impl FoldingRangeKind {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Comment => "comment",
+            Self::Imports => "imports",
+            Self::Region => "region",
+            Self::Custom(value) => value,
+        }
+    }
+}
+
+impl Serialize for FoldingRangeKind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.as_str().serialize(serializer)
+    }
 }
 
 /// Represents a folding range.

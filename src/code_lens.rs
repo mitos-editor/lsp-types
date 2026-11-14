@@ -2,16 +2,33 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
-    Command, DynamicRegistrationClientCapabilities, PartialResultParams, Range,
-    TextDocumentIdentifier, WorkDoneProgressParams,
+    Command, PartialResultParams, Range, TextDocumentIdentifier, WorkDoneProgressOptions,
+    WorkDoneProgressParams,
 };
 
-pub type CodeLensClientCapabilities = DynamicRegistrationClientCapabilities;
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CodeLensClientCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dynamic_registration: Option<bool>,
+
+    /// Properties the client can resolve lazily (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resolve_support: Option<ClientCodeLensResolveOptions>,
+}
+
+/// Properties a client can resolve through `codeLens/resolve` (LSP 3.18).
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+pub struct ClientCodeLensResolveOptions {
+    pub properties: Vec<String>,
+}
 
 /// Code Lens options.
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize, Copy)]
 #[serde(rename_all = "camelCase")]
 pub struct CodeLensOptions {
+    #[serde(flatten)]
+    pub work_done_progress_options: WorkDoneProgressOptions,
     /// Code lens has a resolve provider as well.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resolve_provider: Option<bool>,

@@ -10,8 +10,8 @@ pub type MonikerClientCapabilities = DynamicRegistrationClientCapabilities;
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum MonikerServerCapabilities {
-    Options(MonikerOptions),
     RegistrationOptions(MonikerRegistrationOptions),
+    Options(MonikerOptions),
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]

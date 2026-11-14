@@ -165,6 +165,18 @@ macro_rules! lsp_request {
     ("textDocument/inlineValue") => {
         $crate::request::InlineValueRequest
     };
+    ("textDocument/inlineCompletion") => {
+        $crate::request::InlineCompletionRequest
+    };
+    ("workspace/foldingRange/refresh") => {
+        $crate::request::FoldingRangeRefreshRequest
+    };
+    ("workspace/textDocumentContent") => {
+        $crate::request::TextDocumentContentRequest
+    };
+    ("workspace/textDocumentContent/refresh") => {
+        $crate::request::TextDocumentContentRefreshRequest
+    };
     ("textDocument/diagnostic") => {
         $crate::request::DocumentDiagnosticRequest
     };
@@ -674,10 +686,8 @@ impl Request for PrepareRenameRequest {
 }
 
 #[derive(Debug)]
-#[cfg(feature = "proposed")]
 pub enum InlineCompletionRequest {}
 
-#[cfg(feature = "proposed")]
 impl Request for InlineCompletionRequest {
     type Params = InlineCompletionParams;
     type Result = Option<InlineCompletionResponse>;
@@ -910,7 +920,7 @@ pub enum DocumentDiagnosticRequest {}
 
 impl Request for DocumentDiagnosticRequest {
     type Params = DocumentDiagnosticParams;
-    type Result = DocumentDiagnosticReportResult;
+    type Result = DocumentDiagnosticReport;
     const METHOD: &'static str = "textDocument/diagnostic";
 }
 
@@ -926,7 +936,7 @@ pub enum WorkspaceDiagnosticRequest {}
 impl Request for WorkspaceDiagnosticRequest {
     type Params = WorkspaceDiagnosticParams;
     const METHOD: &'static str = "workspace/diagnostic";
-    type Result = WorkspaceDiagnosticReportResult;
+    type Result = WorkspaceDiagnosticReport;
 }
 
 /// The `workspace/diagnostic/refresh` request is sent from the server to the client. Servers can
@@ -1047,6 +1057,7 @@ mod test {
         check_macro!("textDocument/semanticTokens/range");
         check_macro!("textDocument/inlayHint");
         check_macro!("textDocument/inlineValue");
+        check_macro!("textDocument/inlineCompletion");
         check_macro!("textDocument/diagnostic");
 
         check_macro!("workspace/applyEdit");
@@ -1063,6 +1074,9 @@ mod test {
         check_macro!("workspace/codeLens/refresh");
         check_macro!("workspace/inlayHint/refresh");
         check_macro!("workspace/inlineValue/refresh");
+        check_macro!("workspace/foldingRange/refresh");
+        check_macro!("workspace/textDocumentContent");
+        check_macro!("workspace/textDocumentContent/refresh");
 
         check_macro!("callHierarchy/incomingCalls");
         check_macro!("callHierarchy/outgoingCalls");
@@ -1075,10 +1089,6 @@ mod test {
         check_macro!("typeHierarchy/supertypes");
         check_macro!("workspaceSymbol/resolve");
     }
-
-    #[test]
-    #[cfg(feature = "proposed")]
-    fn check_proposed_macro_definitions() {}
 }
 
 /// Refresh folding ranges for all documents (LSP 3.18).
@@ -1088,4 +1098,24 @@ impl Request for FoldingRangeRefreshRequest {
     type Params = ();
     type Result = ();
     const METHOD: &'static str = "workspace/foldingRange/refresh";
+}
+
+/// Request content for a server-provided document (LSP 3.18).
+#[derive(Debug)]
+pub enum TextDocumentContentRequest {}
+
+impl Request for TextDocumentContentRequest {
+    type Params = TextDocumentContentParams;
+    type Result = TextDocumentContentResult;
+    const METHOD: &'static str = "workspace/textDocumentContent";
+}
+
+/// Ask the client to refresh a server-provided document (LSP 3.18).
+#[derive(Debug)]
+pub enum TextDocumentContentRefreshRequest {}
+
+impl Request for TextDocumentContentRefreshRequest {
+    type Params = TextDocumentContentRefreshParams;
+    type Result = ();
+    const METHOD: &'static str = "workspace/textDocumentContent/refresh";
 }

@@ -41,6 +41,7 @@ pub struct PreviousResultId {
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceDiagnosticParams {
     /// The additional identifier provided during registration.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub identifier: Option<String>,
 
     /// The currently known diagnostic reports with their
@@ -66,7 +67,7 @@ pub struct WorkspaceFullDocumentDiagnosticReport {
     /// The version number for which the diagnostics are reported.
     ///
     /// If the document is not marked as open, `None` can be provided.
-    pub version: Option<i64>,
+    pub version: Option<i32>,
 
     #[serde(flatten)]
     pub full_document_diagnostic_report: FullDocumentDiagnosticReport,
@@ -84,7 +85,7 @@ pub struct WorkspaceUnchangedDocumentDiagnosticReport {
     /// The version number for which the diagnostics are reported.
     ///
     /// If the document is not marked as open, `None` can be provided.
-    pub version: Option<i64>,
+    pub version: Option<i32>,
 
     #[serde(flatten)]
     pub unchanged_document_diagnostic_report: UnchangedDocumentDiagnosticReport,

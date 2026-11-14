@@ -22,6 +22,10 @@ pub struct SignatureInformationSettings {
     /// @since 3.16.0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active_parameter_support: Option<bool>,
+
+    /// Supports `activeParameter: null` to indicate no active parameter (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub no_active_parameter_support: Option<bool>,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
@@ -78,6 +82,9 @@ pub struct SignatureHelpOptions {
 /// Signature help options.
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 pub struct SignatureHelpRegistrationOptions {
+    #[serde(flatten)]
+    pub signature_help_options: SignatureHelpOptions,
+
     #[serde(flatten)]
     pub text_document_registration_options: TextDocumentRegistrationOptions,
 }
@@ -148,9 +155,14 @@ pub struct SignatureHelp {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub active_signature: Option<u32>,
 
-    /// The active parameter of the active signature.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub active_parameter: Option<u32>,
+    /// The active parameter of the active signature. `None` omits the property;
+    /// `Some(None)` sends `null` to indicate that no parameter is active.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_active_parameter"
+    )]
+    pub active_parameter: Option<Option<u32>>,
 }
 
 /// Represents the signature of something callable. A signature
@@ -172,13 +184,25 @@ pub struct SignatureInformation {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parameters: Option<Vec<ParameterInformation>>,
 
-    /// The index of the active parameter.
+    /// The index of the active parameter. `None` omits the property;
+    /// `Some(None)` sends `null` to indicate that no parameter is active.
     ///
     /// If provided, this is used in place of `SignatureHelp.activeParameter`.
     ///
     /// @since 3.16.0
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub active_parameter: Option<u32>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_active_parameter"
+    )]
+    pub active_parameter: Option<Option<u32>>,
+}
+
+fn deserialize_active_parameter<'de, D>(deserializer: D) -> Result<Option<Option<u32>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<u32>::deserialize(deserializer).map(Some)
 }
 
 /// Represents a parameter of a callable-signature. A parameter can

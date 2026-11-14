@@ -32,8 +32,8 @@ pub struct LinkedEditingRangeRegistrationOptions {
 #[serde(untagged)]
 pub enum LinkedEditingRangeServerCapabilities {
     Simple(bool),
-    Options(LinkedEditingRangeOptions),
     RegistrationOptions(LinkedEditingRangeRegistrationOptions),
+    Options(LinkedEditingRangeOptions),
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]

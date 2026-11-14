@@ -10,8 +10,8 @@ pub type InlineValueClientCapabilities = DynamicRegistrationClientCapabilities;
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum InlineValueServerCapabilities {
-    Options(InlineValueOptions),
     RegistrationOptions(InlineValueRegistrationOptions),
+    Options(InlineValueOptions),
 }
 
 /// Inline value options used during static registration.

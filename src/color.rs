@@ -1,6 +1,6 @@
 use crate::{
     DocumentSelector, DynamicRegistrationClientCapabilities, PartialResultParams, Range,
-    TextDocumentIdentifier, TextEdit, WorkDoneProgressParams,
+    TextDocumentIdentifier, TextEdit, WorkDoneProgressOptions, WorkDoneProgressParams,
 };
 use serde::{Deserialize, Serialize};
 
@@ -8,13 +8,19 @@ pub type DocumentColorClientCapabilities = DynamicRegistrationClientCapabilities
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ColorProviderOptions {}
+pub struct ColorProviderOptions {
+    #[serde(flatten)]
+    pub work_done_progress_options: WorkDoneProgressOptions,
+}
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StaticTextDocumentColorProviderOptions {
+    #[serde(flatten)]
+    pub work_done_progress_options: WorkDoneProgressOptions,
     /// A document selector to identify the scope of the registration. If set to null
     /// the document selector provided on the client side will be used.
+    #[serde(deserialize_with = "Option::deserialize")]
     pub document_selector: Option<DocumentSelector>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -25,8 +31,8 @@ pub struct StaticTextDocumentColorProviderOptions {
 #[serde(untagged)]
 pub enum ColorProviderCapability {
     Simple(bool),
-    ColorProvider(ColorProviderOptions),
     Options(StaticTextDocumentColorProviderOptions),
+    ColorProvider(ColorProviderOptions),
 }
 
 impl From<ColorProviderOptions> for ColorProviderCapability {

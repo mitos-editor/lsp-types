@@ -9,8 +9,8 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
 pub enum InlayHintServerCapabilities {
-    Options(InlayHintOptions),
     RegistrationOptions(InlayHintRegistrationOptions),
+    Options(InlayHintOptions),
 }
 
 /// Inlay hint client capabilities.

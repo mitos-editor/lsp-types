@@ -1,6 +1,7 @@
 use crate::{
-    Command, InsertTextFormat, Range, StaticRegistrationOptions, TextDocumentPositionParams,
-    TextDocumentRegistrationOptions, WorkDoneProgressOptions, WorkDoneProgressParams,
+    Command, OneOf, PartialResultParams, Range, StaticRegistrationOptions, StringValue,
+    TextDocumentPositionParams, TextDocumentRegistrationOptions, WorkDoneProgressOptions,
+    WorkDoneProgressParams,
 };
 use serde::{Deserialize, Serialize};
 
@@ -46,6 +47,9 @@ pub struct InlineCompletionRegistrationOptions {
 #[serde(rename_all = "camelCase")]
 pub struct InlineCompletionParams {
     #[serde(flatten)]
+    pub partial_result_params: PartialResultParams,
+
+    #[serde(flatten)]
     pub work_done_progress_params: WorkDoneProgressParams,
 
     #[serde(flatten)]
@@ -55,7 +59,7 @@ pub struct InlineCompletionParams {
     pub context: InlineCompletionContext,
 }
 
-/// Describes how an [`InlineCompletionItemProvider`] was triggered.
+/// Describes how an inline completion provider was triggered.
 ///
 /// @since 3.18.0
 #[derive(Eq, PartialEq, Clone, Copy, Deserialize, Serialize)]
@@ -135,9 +139,9 @@ pub struct InlineCompletionList {
 pub struct InlineCompletionItem {
     /// The text to replace the range with. Must be set.
     /// Is used both for the preview and the accept operation.
-    pub insert_text: String,
+    pub insert_text: OneOf<String, StringValue>,
     /// A text that is used to decide if this inline completion should be
-    /// shown. When `falsy` the [`InlineCompletionItem::insertText`] is
+    /// shown. When `falsy` the [`InlineCompletionItem::insert_text`] is
     /// used.
     ///
     /// An inline completion is shown if the text to replace is a prefix of the
@@ -155,8 +159,4 @@ pub struct InlineCompletionItem {
     /// completion.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub command: Option<Command>,
-    /// The format of the insert text. The format applies to the `insertText`.
-    /// If omitted defaults to `InsertTextFormat.PlainText`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub insert_text_format: Option<InsertTextFormat>,
 }

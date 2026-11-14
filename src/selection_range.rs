@@ -34,8 +34,8 @@ pub struct SelectionRangeRegistrationOptions {
 #[serde(untagged)]
 pub enum SelectionRangeProviderCapability {
     Simple(bool),
-    Options(SelectionRangeOptions),
     RegistrationOptions(SelectionRangeRegistrationOptions),
+    Options(SelectionRangeOptions),
 }
 
 impl From<SelectionRangeRegistrationOptions> for SelectionRangeProviderCapability {

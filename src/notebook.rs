@@ -98,7 +98,7 @@ pub struct NotebookDocumentSyncClientCapabilities {
 
     /// The client supports sending execution summary data per cell.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub execution_summary_report: Option<bool>,
+    pub execution_summary_support: Option<bool>,
 }
 
 ///  Options specific to a notebook plus its cells
@@ -206,6 +206,7 @@ pub enum Notebook {
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", untagged)]
 pub enum NotebookDocumentFilter {
+    #[serde(rename_all = "camelCase")]
     ByType {
         /// The type of the enclosing notebook.
         notebook_type: String,
@@ -214,8 +215,9 @@ pub enum NotebookDocumentFilter {
         scheme: Option<String>,
         /// A glob pattern.
         #[serde(skip_serializing_if = "Option::is_none")]
-        pattern: Option<String>,
+        pattern: Option<crate::GlobPattern>,
     },
+    #[serde(rename_all = "camelCase")]
     ByScheme {
         /// The type of the enclosing notebook.
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -224,8 +226,9 @@ pub enum NotebookDocumentFilter {
         scheme: String,
         /// A glob pattern.
         #[serde(skip_serializing_if = "Option::is_none")]
-        pattern: Option<String>,
+        pattern: Option<crate::GlobPattern>,
     },
+    #[serde(rename_all = "camelCase")]
     ByPattern {
         /// The type of the enclosing notebook.
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -234,7 +237,7 @@ pub enum NotebookDocumentFilter {
         #[serde(skip_serializing_if = "Option::is_none")]
         scheme: Option<String>,
         /// A glob pattern.
-        pattern: String,
+        pattern: crate::GlobPattern,
     },
 }
 

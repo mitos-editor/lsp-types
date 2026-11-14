@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
-    DynamicRegistrationClientCapabilities, PartialResultParams, Range, SymbolKind, SymbolTag,
-    TextDocumentPositionParams, Uri, WorkDoneProgressOptions, WorkDoneProgressParams,
+    CallHierarchyRegistrationOptions, DynamicRegistrationClientCapabilities, PartialResultParams,
+    Range, SymbolKind, SymbolTag, TextDocumentPositionParams, Uri, WorkDoneProgressOptions,
+    WorkDoneProgressParams,
 };
 
 pub type CallHierarchyClientCapabilities = DynamicRegistrationClientCapabilities;
@@ -15,10 +16,11 @@ pub struct CallHierarchyOptions {
     pub work_done_progress_options: WorkDoneProgressOptions,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum CallHierarchyServerCapability {
     Simple(bool),
+    RegistrationOptions(CallHierarchyRegistrationOptions),
     Options(CallHierarchyOptions),
 }
 

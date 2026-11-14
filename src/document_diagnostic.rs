@@ -13,6 +13,9 @@ use crate::{
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DiagnosticClientCapabilities {
+    /// Supports markup in diagnostic messages (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub markup_message_support: Option<bool>,
     /// Whether implementation supports dynamic registration.
     ///
     /// If this is set to `true` the client supports the new `(TextDocumentRegistrationOptions &
@@ -67,8 +70,8 @@ pub struct DiagnosticRegistrationOptions {
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum DiagnosticServerCapabilities {
-    Options(DiagnosticOptions),
     RegistrationOptions(DiagnosticRegistrationOptions),
+    Options(DiagnosticOptions),
 }
 
 /// Parameters of the document diagnostic request.
@@ -81,9 +84,11 @@ pub struct DocumentDiagnosticParams {
     pub text_document: TextDocumentIdentifier,
 
     /// The additional identifier provided during registration.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub identifier: Option<String>,
 
     /// The result ID of a previous response if provided.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub previous_result_id: Option<String>,
 
     #[serde(flatten)]
@@ -220,10 +225,7 @@ impl From<RelatedUnchangedDocumentDiagnosticReport> for DocumentDiagnosticReport
 #[derive(Debug, PartialEq, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DocumentDiagnosticReportPartialResult {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(default)]
-    pub related_documents: Option<HashMap<Uri, DocumentDiagnosticReportKind>>,
-    // relatedDocuments?: { [uri: string]: FullDocumentDiagnosticReport | UnchangedDocumentDiagnosticReport; };
+    pub related_documents: HashMap<Uri, DocumentDiagnosticReportKind>,
 }
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
@@ -232,6 +234,10 @@ pub enum DocumentDiagnosticReportResult {
     Report(DocumentDiagnosticReport),
     Partial(DocumentDiagnosticReportPartialResult),
 }
+
+/// Diagnostic progress starts with a document report and may then contain
+/// related-document partial reports (LSP 3.18.1).
+pub type DocumentDiagnosticReportProgress = DocumentDiagnosticReportResult;
 
 impl From<DocumentDiagnosticReport> for DocumentDiagnosticReportResult {
     fn from(from: DocumentDiagnosticReport) -> Self {

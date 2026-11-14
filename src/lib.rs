@@ -119,6 +119,9 @@ pub use completion::*;
 mod document_diagnostic;
 pub use document_diagnostic::*;
 
+mod diagnostic_message;
+pub use diagnostic_message::*;
+
 mod document_highlight;
 pub use document_highlight::*;
 
@@ -149,10 +152,17 @@ pub use inlay_hint::*;
 mod inline_value;
 pub use inline_value::*;
 
-#[cfg(feature = "proposed")]
 mod inline_completion;
-#[cfg(feature = "proposed")]
 pub use inline_completion::*;
+
+mod text_document_content;
+pub use text_document_content::*;
+
+mod language;
+pub use language::*;
+
+mod registration;
+pub use registration::*;
 
 mod moniker;
 pub use moniker::*;
@@ -377,8 +387,9 @@ pub struct Diagnostic {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source: Option<String>,
 
-    /// The diagnostic's message.
-    pub message: String,
+    /// The diagnostic's message. Markup requires the client's
+    /// `textDocument.diagnostic.markupMessageSupport` capability (LSP 3.18).
+    pub message: DiagnosticMessage,
 
     /// An array of related diagnostic information, e.g. when symbol-names within
     /// a scope collide all definitions can be marked via this property.
@@ -418,7 +429,7 @@ impl Diagnostic {
             severity,
             code,
             source,
-            message,
+            message: message.into(),
             related_information,
             tags,
             ..Diagnostic::default()
@@ -492,7 +503,7 @@ impl DiagnosticTag {
 /// their execution on the server side if the client and server provides the corresponding capabilities.
 /// Alternatively the tool extension code could handle the command.
 /// The protocol currently doesn’t specify a set of well-known commands.
-#[derive(Debug, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 pub struct Command {
     /// Title of the command, like `save`.
     pub title: String,
@@ -502,6 +513,10 @@ pub struct Command {
     /// invoked with.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub arguments: Option<Vec<Value>>,
+
+    /// A tooltip for the command (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tooltip: Option<String>,
 }
 
 impl Command {
@@ -510,6 +525,7 @@ impl Command {
             title,
             command,
             arguments,
+            tooltip: None,
         }
     }
 }
@@ -674,12 +690,6 @@ pub struct DeleteFileOptions {
     /// Ignore the operation if the file doesn't exist.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ignore_if_not_exists: Option<bool>,
-
-    /// An optional annotation identifier describing the operation.
-    ///
-    /// @since 3.16.0
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub annotation_id: Option<ChangeAnnotationIdentifier>,
 }
 
 /// Delete file operation
@@ -928,7 +938,7 @@ impl TextDocumentPositionParams {
 /// { language: 'typescript', scheme: 'file' }
 /// { language: 'json', pattern: '**/package.json' }
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
-pub struct DocumentFilter {
+pub struct TextDocumentFilter {
     /// A language id, like `typescript`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
@@ -939,7 +949,35 @@ pub struct DocumentFilter {
 
     /// A glob pattern, like `*.{ts,js}`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub pattern: Option<String>,
+    pub pattern: Option<GlobPattern>,
+}
+
+/// A filter matching a top-level text document or a notebook cell document.
+#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum DocumentFilter {
+    NotebookCell(NotebookCellTextDocumentFilter),
+    Text(TextDocumentFilter),
+}
+
+impl From<TextDocumentFilter> for DocumentFilter {
+    fn from(filter: TextDocumentFilter) -> Self {
+        Self::Text(filter)
+    }
+}
+
+impl From<NotebookCellTextDocumentFilter> for DocumentFilter {
+    fn from(filter: NotebookCellTextDocumentFilter) -> Self {
+        Self::NotebookCell(filter)
+    }
+}
+
+/// Client support for relative document filter patterns (LSP 3.18).
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TextDocumentFilterClientCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub relative_pattern_support: Option<bool>,
 }
 
 /// A document selector is the combination of one or many document filters.
@@ -953,7 +991,7 @@ pub struct InitializeParams {
     /// The process Id of the parent process that started
     /// the server. Is null if the process has not been started by another process.
     /// If the parent process is not alive then the server should exit (see exit notification) its process.
-    pub process_id: Option<u32>,
+    pub process_id: Option<i32>,
 
     /// The rootPath of the workspace. Is null
     /// if no folder is open.
@@ -1032,6 +1070,20 @@ pub struct GenericRegistrationOptions {
     pub static_registration_options: StaticRegistrationOptions,
 }
 
+impl From<StaticTextDocumentRegistrationOptions> for GenericRegistrationOptions {
+    fn from(options: StaticTextDocumentRegistrationOptions) -> Self {
+        Self {
+            text_document_registration_options: TextDocumentRegistrationOptions {
+                document_selector: options.document_selector,
+            },
+            options: GenericOptions {
+                work_done_progress_options: WorkDoneProgressOptions::default(),
+            },
+            static_registration_options: StaticRegistrationOptions { id: options.id },
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 pub struct GenericOptions {
     #[serde(flatten)]
@@ -1072,6 +1124,9 @@ pub struct GotoCapability {
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceEditClientCapabilities {
+    /// Supports workspace edit metadata (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata_support: Option<bool>,
     /// Supports snippets in text document edits (LSP 3.18).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub snippet_edit_support: Option<bool>,
@@ -1169,6 +1224,7 @@ pub struct SymbolKindCapability {
     /// If this property is not present the client only supports
     /// the symbol kinds from `File` to `Array` as defined in
     /// the initial version of the protocol.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub value_set: Option<Vec<SymbolKind>>,
 }
 
@@ -1176,6 +1232,9 @@ pub struct SymbolKindCapability {
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceClientCapabilities {
+    /// Capabilities for server-provided document content (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_document_content: Option<TextDocumentContentClientCapabilities>,
     /// Folding range refresh support (LSP 3.18).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub folding_range: Option<FoldingRangeWorkspaceClientCapabilities>,
@@ -1345,6 +1404,9 @@ impl<T> TagSupport<T> {
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextDocumentClientCapabilities {
+    /// Supported document filters (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filters: Option<TextDocumentFilterClientCapabilities>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub synchronization: Option<TextDocumentSyncClientCapabilities>,
     /// Capabilities specific to the `textDocument/completion`
@@ -1483,7 +1545,6 @@ pub struct TextDocumentClientCapabilities {
     ///
     /// @since 3.18.0
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg(feature = "proposed")]
     pub inline_completion: Option<InlineCompletionClientCapabilities>,
 }
 
@@ -1513,11 +1574,11 @@ pub struct ClientCapabilities {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub general: Option<GeneralClientCapabilities>,
 
-    /// Unofficial UT8-offsets extension.
+    /// Legacy, non-standard UTF-8 offsets extension. Prefer `general.positionEncodings`.
     ///
-    /// See https://clangd.llvm.org/extensions.html#utf-8-offsets.
+    /// See <https://clangd.llvm.org/extensions.html#utf-8-offsets>.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg(feature = "proposed")]
+    #[cfg(feature = "legacy-offset-encoding")]
     pub offset_encoding: Option<Vec<String>>,
 
     /// Experimental client capabilities.
@@ -1626,11 +1687,11 @@ pub struct InitializeResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub server_info: Option<ServerInfo>,
 
-    /// Unofficial UT8-offsets extension.
+    /// Legacy, non-standard UTF-8 offsets extension. Prefer `capabilities.positionEncoding`.
     ///
-    /// See https://clangd.llvm.org/extensions.html#utf-8-offsets.
+    /// See <https://clangd.llvm.org/extensions.html#utf-8-offsets>.
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg(feature = "proposed")]
+    #[cfg(feature = "legacy-offset-encoding")]
     pub offset_encoding: Option<String>,
 }
 
@@ -1768,12 +1829,13 @@ impl From<TextDocumentSyncKind> for TextDocumentSyncCapability {
 #[serde(untagged)]
 pub enum ImplementationProviderCapability {
     Simple(bool),
-    Options(StaticTextDocumentRegistrationOptions),
+    RegistrationOptions(ImplementationRegistrationOptions),
+    Options(ImplementationOptions),
 }
 
 impl From<StaticTextDocumentRegistrationOptions> for ImplementationProviderCapability {
     fn from(from: StaticTextDocumentRegistrationOptions) -> Self {
-        Self::Options(from)
+        Self::RegistrationOptions(from.into())
     }
 }
 
@@ -1787,12 +1849,13 @@ impl From<bool> for ImplementationProviderCapability {
 #[serde(untagged)]
 pub enum TypeDefinitionProviderCapability {
     Simple(bool),
-    Options(StaticTextDocumentRegistrationOptions),
+    RegistrationOptions(TypeDefinitionRegistrationOptions),
+    Options(TypeDefinitionOptions),
 }
 
 impl From<StaticTextDocumentRegistrationOptions> for TypeDefinitionProviderCapability {
     fn from(from: StaticTextDocumentRegistrationOptions) -> Self {
-        Self::Options(from)
+        Self::RegistrationOptions(from.into())
     }
 }
 
@@ -1826,7 +1889,7 @@ pub struct ServerCapabilities {
     /// @since 3.17.0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notebook_document_sync:
-        Option<OneOf<NotebookDocumentSyncOptions, NotebookDocumentSyncRegistrationOptions>>,
+        Option<OneOf<NotebookDocumentSyncRegistrationOptions, NotebookDocumentSyncOptions>>,
 
     /// Capabilities specific to `textDocument/selectionRange` requests.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1924,6 +1987,10 @@ pub struct ServerCapabilities {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub call_hierarchy_provider: Option<CallHierarchyServerCapability>,
 
+    /// The server provides type hierarchy support (LSP 3.17).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub type_hierarchy_provider: Option<TypeHierarchyServerCapabilities>,
+
     /// Semantic tokens server capabilities.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub semantic_tokens_provider: Option<SemanticTokensServerCapabilities>,
@@ -1960,7 +2027,6 @@ pub struct ServerCapabilities {
     ///
     /// @since 3.18.0
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[cfg(feature = "proposed")]
     pub inline_completion_provider: Option<OneOf<bool, InlineCompletionOptions>>,
 
     /// Experimental server capabilities.
@@ -1971,6 +2037,10 @@ pub struct ServerCapabilities {
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceServerCapabilities {
+    /// Server-provided document content (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_document_content:
+        Option<OneOf<TextDocumentContentRegistrationOptions, TextDocumentContentOptions>>,
     /// The server supports workspace folder.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub workspace_folders: Option<WorkspaceFoldersServerCapabilities>,
@@ -2007,6 +2077,7 @@ pub struct RegistrationParams {
 pub struct TextDocumentRegistrationOptions {
     /// A document selector to identify the scope of the registration. If set to null
     /// the document selector provided on the client side will be used.
+    #[serde(deserialize_with = "Option::deserialize")]
     pub document_selector: Option<DocumentSelector>,
 }
 
@@ -2123,6 +2194,7 @@ pub struct WorkspaceSymbolOptions {
 pub struct StaticTextDocumentRegistrationOptions {
     /// A document selector to identify the scope of the registration. If set to null
     /// the document selector provided on the client side will be used.
+    #[serde(deserialize_with = "Option::deserialize")]
     pub document_selector: Option<DocumentSelector>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2555,9 +2627,6 @@ pub struct ExecuteCommandParams {
 /// Execute command registration options.
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 pub struct ExecuteCommandRegistrationOptions {
-    /// The commands to be executed on the server
-    pub commands: Vec<String>,
-
     #[serde(flatten)]
     pub execute_command_options: ExecuteCommandOptions,
 }
@@ -2565,6 +2634,9 @@ pub struct ExecuteCommandRegistrationOptions {
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApplyWorkspaceEditParams {
+    /// Additional information about the edit (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata: Option<WorkspaceEditMetadata>,
     /// An optional label of the workspace edit. This label is
     /// presented in the user interface for example on an undo
     /// stack to undo the workspace edit.
@@ -2573,6 +2645,15 @@ pub struct ApplyWorkspaceEditParams {
 
     /// The edits to apply.
     pub edit: WorkspaceEdit,
+}
+
+/// Additional information about a workspace edit (LSP 3.18).
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceEditMetadata {
+    /// Whether this edit is a refactoring.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_refactoring: Option<bool>,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]

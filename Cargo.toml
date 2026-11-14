@@ -26,6 +26,7 @@ fluent-uri = "0.4"
 
 [features]
 default = []
-# Enables proposed LSP extensions.
-# NOTE: No semver compatibility is guaranteed for types enabled by this feature.
-proposed = []
+# Compatibility alias. All standard LSP 3.18 definitions are enabled by default.
+proposed = ["legacy-offset-encoding"]
+# Non-standard clangd offsetEncoding extension, superseded by positionEncodings.
+legacy-offset-encoding = []
