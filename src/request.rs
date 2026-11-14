@@ -90,6 +90,9 @@ macro_rules! lsp_request {
     ("textDocument/rangeFormatting") => {
         $crate::request::RangeFormatting
     };
+    ("textDocument/rangesFormatting") => {
+        $crate::request::RangesFormatting
+    };
     ("textDocument/onTypeFormatting") => {
         $crate::request::OnTypeFormatting
     };
@@ -582,6 +585,16 @@ impl Request for RangeFormatting {
     const METHOD: &'static str = "textDocument/rangeFormatting";
 }
 
+/// Format multiple ranges from one document snapshot (LSP 3.18).
+#[derive(Debug)]
+pub enum RangesFormatting {}
+
+impl Request for RangesFormatting {
+    type Params = DocumentRangesFormattingParams;
+    type Result = Option<Vec<TextEdit>>;
+    const METHOD: &'static str = "textDocument/rangesFormatting";
+}
+
 /// The document on type formatting request is sent from the client to the server to format parts of
 /// the document during typing.
 #[derive(Debug)]
@@ -1014,6 +1027,7 @@ mod test {
         check_macro!("textDocument/codeLens");
         check_macro!("textDocument/documentLink");
         check_macro!("textDocument/rangeFormatting");
+        check_macro!("textDocument/rangesFormatting");
         check_macro!("textDocument/onTypeFormatting");
         check_macro!("textDocument/formatting");
         check_macro!("textDocument/rename");

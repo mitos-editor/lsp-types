@@ -8,7 +8,15 @@ use crate::{
 use std::collections::HashMap;
 
 pub type DocumentFormattingClientCapabilities = DynamicRegistrationClientCapabilities;
-pub type DocumentRangeFormattingClientCapabilities = DynamicRegistrationClientCapabilities;
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentRangeFormattingClientCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dynamic_registration: Option<bool>,
+    /// Whether the client supports formatting multiple ranges at once (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ranges_support: Option<bool>,
+}
 pub type DocumentOnTypeFormattingClientCapabilities = DynamicRegistrationClientCapabilities;
 
 /// Format document on type options
@@ -83,6 +91,17 @@ pub struct DocumentRangeFormattingParams {
     /// The format options
     pub options: FormattingOptions,
 
+    #[serde(flatten)]
+    pub work_done_progress_params: WorkDoneProgressParams,
+}
+
+/// Format multiple ranges from one document snapshot (LSP 3.18).
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentRangesFormattingParams {
+    pub text_document: TextDocumentIdentifier,
+    pub ranges: Vec<Range>,
+    pub options: FormattingOptions,
     #[serde(flatten)]
     pub work_done_progress_params: WorkDoneProgressParams,
 }

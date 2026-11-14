@@ -2,6 +2,22 @@ use lsp_types::*;
 use serde_json::json;
 
 #[test]
+fn multi_range_formatting_capabilities_and_requests_round_trip() {
+    let value = json!({"textDocument":{"rangeFormatting":{
+        "dynamicRegistration":false,"rangesSupport":true}}});
+    let caps: ClientCapabilities = serde_json::from_value(value.clone()).unwrap();
+    assert_eq!(serde_json::to_value(caps).unwrap(), value);
+    let value = json!({"documentRangeFormattingProvider":{"rangesSupport":true}});
+    let caps: ServerCapabilities = serde_json::from_value(value.clone()).unwrap();
+    assert_eq!(serde_json::to_value(caps).unwrap(), value);
+    let value = json!({"textDocument":{"uri":"file:///tmp/a"},
+        "ranges":[{"start":{"line":0,"character":0},"end":{"line":0,"character":1}}],
+        "options":{"tabSize":4,"insertSpaces":true}});
+    let params: DocumentRangesFormattingParams = serde_json::from_value(value.clone()).unwrap();
+    assert_eq!(serde_json::to_value(params).unwrap(), value);
+}
+
+#[test]
 fn jdtls_workspace_snippets_without_kind_decode_as_snippets() {
     // JDT LS 1.63 emits this shape from resolved Extract to method actions.
     let value = json!({"documentChanges":[{

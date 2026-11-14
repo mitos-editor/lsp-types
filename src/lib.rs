@@ -2064,6 +2064,9 @@ pub struct DocumentFormattingOptions {
 pub struct DocumentRangeFormattingOptions {
     #[serde(flatten)]
     pub work_done_progress_options: WorkDoneProgressOptions,
+    /// Whether the server supports formatting multiple ranges at once (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ranges_support: Option<bool>,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
