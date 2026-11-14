@@ -2,6 +2,26 @@ use lsp_types::*;
 use serde_json::json;
 
 #[test]
+fn jdtls_workspace_snippets_without_kind_decode_as_snippets() {
+    // JDT LS 1.63 emits this shape from resolved Extract to method actions.
+    let value = json!({"documentChanges":[{
+        "textDocument":{"uri":"file:///tmp/Main.java","version":null},
+        "edits":[{"range":{"start":{"line":1,"character":0},
+            "end":{"line":2,"character":0}},
+            "snippet":{"value":"${1|private,public,protected|} void ${2:method}() {}"}}]
+    }]});
+    let edit: WorkspaceEdit = serde_json::from_value(value).unwrap();
+    let Some(DocumentChanges::Edits(documents)) = edit.document_changes else {
+        panic!("document edits")
+    };
+    let DocumentTextEdit::Snippet(snippet) = &documents[0].edits[0] else {
+        panic!("snippet edit")
+    };
+    assert_eq!(snippet.snippet.kind, "snippet");
+    assert_eq!(serde_json::to_value(snippet).unwrap()["snippet"]["kind"], "snippet");
+}
+
+#[test]
 fn completion_defaults_and_merge_rules_round_trip() {
     let value = json!({"isIncomplete":false,"items":[{"label":"call","textEditText":"call($1)$0"}],
         "itemDefaults":{"insertTextFormat":2,"data":{"provider":"a"},

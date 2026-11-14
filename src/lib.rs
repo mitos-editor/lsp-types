@@ -2784,8 +2784,15 @@ mod tests {
 /// An LSP snippet string (LSP 3.18).
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 pub struct StringValue {
+    // JDT LS omits this discriminator in workspace snippets. Normalize that
+    // payload on input while retaining the standard field on output.
+    #[serde(default = "snippet_kind")]
     pub kind: String,
     pub value: String,
+}
+
+fn snippet_kind() -> String {
+    "snippet".to_owned()
 }
 
 /// A snippet replacement in a workspace edit (LSP 3.18).
