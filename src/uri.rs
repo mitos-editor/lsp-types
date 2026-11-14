@@ -2,9 +2,11 @@ use std::{hash::Hash, ops::Deref, str::FromStr};
 
 use serde::{de::Error, Deserialize, Serialize};
 
-/// Newtype struct around `fluent_uri::Uri<String>` with serialization implementations that use `as_str()` and 'from_str()' respectively.
+/// A URI reference serialized as a string, preserving its original spelling.
+///
+/// Wraps `fluent_uri::UriRef<String>` to retain support for relative references.
 #[derive(Debug, Clone)]
-pub struct Uri(fluent_uri::Uri<String>);
+pub struct Uri(fluent_uri::UriRef<String>);
 
 impl Serialize for Uri {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -21,9 +23,9 @@ impl<'de> Deserialize<'de> for Uri {
         D: serde::Deserializer<'de>,
     {
         let string = String::deserialize(deserializer)?;
-        fluent_uri::Uri::<String>::parse_from(string)
+        fluent_uri::UriRef::parse(string)
             .map(Uri)
-            .map_err(|(_, error)| Error::custom(error.to_string()))
+            .map_err(|(error, _)| Error::custom(error))
     }
 }
 
@@ -43,28 +45,18 @@ impl FromStr for Uri {
     type Err = fluent_uri::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // TOUCH-UP:
-        // Use upstream `FromStr` implementation if and when
-        // https://github.com/yescallop/fluent-uri-rs/pull/10
-        // gets merged.
-        // fluent_uri::Uri::from_str(s).map(Self)
-        fluent_uri::Uri::parse(s).map(|uri| Self(uri.to_owned()))
+        s.parse().map(Self)
     }
 }
 
 impl Deref for Uri {
-    type Target = fluent_uri::Uri<String>;
+    type Target = fluent_uri::UriRef<String>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-/*
-    TOUCH-UP: `PartialEq`, `Eq` and `Hash` could all be derived
-    if and when the respective implementations get merged upstream:
-    https://github.com/yescallop/fluent-uri-rs/pull/9
-*/
 impl PartialEq for Uri {
     fn eq(&self, other: &Self) -> bool {
         self.as_str() == other.as_str()

@@ -2398,6 +2398,7 @@ pub struct RelativePattern {
 pub type Pattern = String;
 
 bitflags! {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct WatchKind: u8 {
     /// Interested in create events.
     const Create = 1;
@@ -2763,12 +2764,15 @@ mod tests {
 
     #[test]
     fn test_watch_kind() {
+        test_serialization(&WatchKind::empty(), "0");
         test_serialization(&WatchKind::Create, "1");
         test_serialization(&(WatchKind::Create | WatchKind::Change), "3");
         test_serialization(
             &(WatchKind::Create | WatchKind::Change | WatchKind::Delete),
             "7",
         );
+        assert!(serde_json::from_str::<WatchKind>("8").is_err());
+        assert!(serde_json::from_str::<WatchKind>("255").is_err());
     }
 
     #[test]

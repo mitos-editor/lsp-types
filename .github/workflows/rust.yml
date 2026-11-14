@@ -23,18 +23,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v7
 
-    - uses: actions-rs/toolchain@v1
+    - uses: dtolnay/rust-toolchain@master
       with:
-        profile: minimal
         toolchain: ${{ matrix.rust }}
-        override: true
 
     - name: Build
       run: cargo build
 
     - name: Run tests
-      run: >
-        FEATURES=${{ matrix.features }}
-        cargo test --features ${FEATURES:-""}
+      run: cargo test --features "${{ matrix.features }}"
