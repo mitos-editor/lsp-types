@@ -143,3 +143,11 @@ pub struct FoldingRange {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub collapsed_text: Option<String>,
 }
+
+/// Workspace folding-range capabilities (LSP 3.18).
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FoldingRangeWorkspaceClientCapabilities {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refresh_support: Option<bool>,
+}

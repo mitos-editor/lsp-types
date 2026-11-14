@@ -6,7 +6,7 @@ use crate::{
     WorkDoneProgressParams,
 };
 
-use crate::Range;
+use crate::{OneOf, Range};
 use serde_json::Value;
 use std::fmt::Debug;
 
@@ -203,6 +203,10 @@ pub struct CompletionListCapability {
     /// @since 3.17.0
     #[serde(skip_serializing_if = "Option::is_none")]
     pub item_defaults: Option<Vec<String>>,
+
+    /// Supports the LSP 3.18 rules combining list defaults with item values.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub apply_kind_support: Option<bool>,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
@@ -406,6 +410,12 @@ impl CompletionTriggerKind {
 #[derive(Debug, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CompletionList {
+    /// Shared completion properties, available since LSP 3.17.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub item_defaults: Option<CompletionItemDefaults>,
+    /// Rules combining defaults with item properties, available since LSP 3.18.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub apply_kind: Option<CompletionItemApplyKinds>,
     /// This list it not complete. Further typing should result in recomputing
     /// this list.
     pub is_incomplete: bool,
@@ -417,6 +427,9 @@ pub struct CompletionList {
 #[derive(Debug, PartialEq, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CompletionItem {
+    /// Text used with a completion list's default edit range (LSP 3.17).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text_edit_text: Option<String>,
     /// The label of this completion item. By default
     /// also the text that is inserted when selecting
     /// this completion.
@@ -613,4 +626,48 @@ mod tests {
             Ok(CompletionItemKind::TYPE_PARAMETER)
         );
     }
+}
+
+/// Default properties shared by a completion list (LSP 3.17).
+#[derive(Debug, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompletionItemDefaults {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub commit_characters: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub edit_range: Option<OneOf<Range, EditRangeWithInsertReplace>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub insert_text_format: Option<InsertTextFormat>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub insert_text_mode: Option<InsertTextMode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<Value>,
+}
+
+/// Insert and replace ranges for a shared completion edit (LSP 3.17).
+#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+pub struct EditRangeWithInsertReplace {
+    pub insert: Range,
+    pub replace: Range,
+}
+
+/// How a list default and an item property are combined (LSP 3.18).
+#[derive(Eq, PartialEq, Clone, Copy, Deserialize, Serialize)]
+#[serde(transparent)]
+pub struct ApplyKind(i32);
+lsp_enum! {
+impl ApplyKind {
+    pub const REPLACE: ApplyKind = ApplyKind(1);
+    pub const MERGE: ApplyKind = ApplyKind(2);
+}
+}
+
+/// Merge rules for completion-list defaults (LSP 3.18).
+#[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompletionItemApplyKinds {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub commit_characters: Option<ApplyKind>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<ApplyKind>,
 }

@@ -1,3 +1,20 @@
+# Mitos protocol types
+
+This fork maintains the protocol types used by [Mitos](https://github.com/mitos-editor/mitos).
+It starts from upstream lsp-types 0.97.0 and adds the following standard protocol structures:
+
+- LSP 3.17 completion-list defaults and textEditText;
+- LSP 3.18 completion-list merge rules, snippet workspace edits, and folding refresh;
+- integer-granularity semantic-token delta data;
+- retention of annotated text edits and deletion annotation identifiers.
+
+This is a focused compatibility update, not a claim of complete LSP 3.18 coverage.
+New optional fields are omitted when absent. `TextDocumentEdit.edits` now uses
+`DocumentTextEdit` to distinguish plain, annotated, and snippet edits. Semantic token
+delta insertion data is a raw integer array, as required by the protocol.
+
+The original upstream documentation follows.
+
 # lsp-types [![Build Status](https://travis-ci.org/gluon-lang/lsp-types.svg?branch=master)](https://travis-ci.org/gluon-lang/lsp-types) [![Documentation](https://docs.rs/lsp-types/badge.svg)](https://docs.rs/crate/lsp-types)
 
 Types useful for interacting with a [language server](https://code.visualstudio.com/blogs/2016/06/27/common-language-protocol).

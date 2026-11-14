@@ -570,7 +570,7 @@ pub struct TextDocumentEdit {
     ///
     /// @since 3.16.0 - support for AnnotatedTextEdit. This is guarded by the
     /// client capability `workspace.workspaceEdit.changeAnnotationSupport`
-    pub edits: Vec<OneOf<TextEdit, AnnotatedTextEdit>>,
+    pub edits: Vec<DocumentTextEdit>,
 }
 
 /// Additional information that describes document changes.
@@ -686,6 +686,9 @@ pub struct DeleteFileOptions {
 #[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteFile {
+    /// Change annotation for this deletion (LSP 3.16).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotation_id: Option<ChangeAnnotationIdentifier>,
     /// The file to delete.
     pub uri: Uri,
     /// Delete options.
@@ -1069,6 +1072,9 @@ pub struct GotoCapability {
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceEditClientCapabilities {
+    /// Supports snippets in text document edits (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub snippet_edit_support: Option<bool>,
     /// The client supports versioned document changes in `WorkspaceEdit`s
     #[serde(skip_serializing_if = "Option::is_none")]
     pub document_changes: Option<bool>,
@@ -1170,6 +1176,9 @@ pub struct SymbolKindCapability {
 #[derive(Debug, Eq, PartialEq, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkspaceClientCapabilities {
+    /// Folding range refresh support (LSP 3.18).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub folding_range: Option<FoldingRangeWorkspaceClientCapabilities>,
     /// The client supports applying batch edits to the workspace by supporting
     /// the request 'workspace/applyEdit'
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2769,5 +2778,47 @@ mod tests {
             ],
             r#"["create","rename","delete"]"#,
         );
+    }
+}
+
+/// An LSP snippet string (LSP 3.18).
+#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+pub struct StringValue {
+    pub kind: String,
+    pub value: String,
+}
+
+/// A snippet replacement in a workspace edit (LSP 3.18).
+#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SnippetTextEdit {
+    pub range: Range,
+    pub snippet: StringValue,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotation_id: Option<ChangeAnnotationIdentifier>,
+}
+
+/// A document replacement. Annotated edits must be tried before plain edits so
+/// annotation identifiers are retained during untagged deserialization.
+#[derive(Debug, Eq, PartialEq, Clone, Deserialize, Serialize)]
+#[serde(untagged)]
+pub enum DocumentTextEdit {
+    Snippet(SnippetTextEdit),
+    Annotated(AnnotatedTextEdit),
+    Plain(TextEdit),
+}
+impl From<TextEdit> for DocumentTextEdit {
+    fn from(edit: TextEdit) -> Self {
+        Self::Plain(edit)
+    }
+}
+impl From<AnnotatedTextEdit> for DocumentTextEdit {
+    fn from(edit: AnnotatedTextEdit) -> Self {
+        Self::Annotated(edit)
+    }
+}
+impl From<SnippetTextEdit> for DocumentTextEdit {
+    fn from(edit: SnippetTextEdit) -> Self {
+        Self::Snippet(edit)
     }
 }

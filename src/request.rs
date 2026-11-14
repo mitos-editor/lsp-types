@@ -1066,3 +1066,12 @@ mod test {
     #[cfg(feature = "proposed")]
     fn check_proposed_macro_definitions() {}
 }
+
+/// Refresh folding ranges for all documents (LSP 3.18).
+#[derive(Debug)]
+pub enum FoldingRangeRefreshRequest {}
+impl Request for FoldingRangeRefreshRequest {
+    type Params = ();
+    type Result = ();
+    const METHOD: &'static str = "workspace/foldingRange/refresh";
+}
